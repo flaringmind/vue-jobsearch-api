@@ -23,7 +23,7 @@ class JobsController extends Controller
     {
         $data = $this->vuejobService->getFormattedJobs();
 
-        return response()->json(['jobs' => $data]);
+        return response()->json($data);
     }
 
     /**
@@ -34,11 +34,8 @@ class JobsController extends Controller
      */
     public function store(Request $request)
     {
-        if($this->vuejobService->createJob($request)) {
-            return response()->json(['message' => 'Job has been created successfully'], 201);
-        }
-
-        return response()->json(['message' => 'Internal server error'], 500);
+        $responseId = $this->vuejobService->createJob($request);
+        return response()->json(['id' => $responseId], 201);
     }
 
     /**
@@ -51,7 +48,7 @@ class JobsController extends Controller
     {
         $data = $this->vuejobService->getFormattedJob($id);
 
-        return response()->json([$data]);
+        return response()->json([...$data]);
     }
 
     /**
@@ -63,11 +60,8 @@ class JobsController extends Controller
      */
     public function update(Request $request, int $id)
     {
-        if($this->vuejobService->updateJob($request, $id)) {
-            return response()->json(['message' => 'Job has been updated successfully']);
-        }
-
-        return response()->json(['message' => 'Internal server error'], 500);
+        $this->vuejobService->updateJob($request, $id);
+        return response()->json(['id' => $id], 201);
     }
 
     /**

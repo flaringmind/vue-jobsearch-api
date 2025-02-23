@@ -82,7 +82,7 @@ class VuejobService
         });
     }
 
-    public function createJob(Request $request): bool
+    public function createJob(Request $request): int
     {
         $companyId = DB::table('companies')
             ->insertGetId([
@@ -91,14 +91,14 @@ class VuejobService
             ]);
 
         return DB::table('vuejobs')
-            ->insert([
+            ->insertGetId([
                 ...($this->getJobData($request)),
                 'created_at' => now(),
                 'company_id' => $companyId,
             ]);
     }
 
-    public function updateJob(Request $request, int $id)
+    public function updateJob(Request $request, int $id): int
     {
         $companyId = DB::table('vuejobs')->where('id', $id)->value('company_id');
 
