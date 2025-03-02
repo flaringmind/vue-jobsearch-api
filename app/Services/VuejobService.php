@@ -1,123 +1,84 @@
-<?php
+<?php /** @noinspection ALL */
 
 declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Http\Requests\UpdateOrCreateRequest;
+use App\Http\Resources\VuejobResource;
+use App\Models\Company;
+use App\Models\Vuejob;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use stdClass;
 
 class VuejobService
 {
-    public function getCompanyData(Request $request): array
+
+    public function getFormattedJob(Vuejob $job): VuejobResource
     {
-        return [
-            'name' => $request->company['name'],
-            'description' => $request->company['description'],
-            'contactEmail' => $request->company['contactEmail'],
-            'contactPhone' => $request->company['contactPhone'],
-            'updated_at' => now(),
-        ];
+        return new VuejobResource($job->load('company'));
     }
 
-    public function getJobData(Request $request): array
+    public function getFormattedJobs(): AnonymousResourceCollection
     {
-        return [
+        return VuejobResource::collection(Vuejob::with('company')->get());
+    }
+
+    public function createJob(UpdateOrCreateRequest $request): int
+    {
+        $request->validated();
+
+        $company = Company::updateOrCreate(
+            [
+                'name' => $request->company['name'],
+                'contactEmail' => $request->company['contactEmail'],
+                'contactPhone' => $request->company['contactPhone'],
+            ],
+            ['description' => $request->company['description']]
+        );
+
+        return Vuejob::create([
             'title' => $request->title,
             'type' => $request->type,
             'description' => $request->description,
             'location' => $request->location,
             'salary' => $request->salary,
             'user_id' => 1,
-            'updated_at' => now(),
-        ];
+            'company_id' => $company->id,
+        ])->id;
     }
 
-    public function getJobQuery(): Builder
+    public function updateJob(UpdateOrCreateRequest $request, Vuejob $job): int
     {
-        return DB::table('vuejobs')
-            ->leftJoin('companies', 'vuejobs.company_id', '=', 'companies.id')
-            ->select(
-                'vuejobs.*',
-                'companies.name as company_name',
-                'companies.description as company_description',
-                'companies.contactEmail as company_contactEmail',
-                'companies.contactPhone as company_contactPhone'
-            );
+        $request->validated();
+
+        $company = Company::find($job->company->id)->update([
+            'name' => $request->company['name'],
+            'description' => $request->company['description'],
+            'contactEmail' => $request->company['contactEmail'],
+            'contactPhone' => $request->company['contactPhone'],
+        ]);
+
+        if($job->update([
+            'title' => $request->title,
+            'type' => $request->type,
+            'description' => $request->description,
+            'location' => $request->location,
+            'salary' => $request->salary,
+        ])) {
+            return $job->id;
+        } else {
+            return false;
+        };
     }
 
-    public function formatJob(stdClass $job): array
+    public function deleteJob(Vuejob $job)
     {
-        return [
-            'id' => $job->id,
-            'title' => $job->title,
-            'type' => $job->type,
-            'description' => $job->description,
-            'location' => $job->location,
-            'salary' => $job->salary,
-            'company' => [
-                'name' => $job->company_name,
-                'description' => $job->company_description,
-                'contactEmail' => $job->company_contactEmail,
-                'contactPhone' => $job->company_contactPhone,
-            ],
-        ];
-    }
-
-    public function getFormattedJob(int $id): array
-    {
-        $job = $this->getJobQuery()->where('vuejobs.id', $id)->first();;
-        return $this->formatJob($job);
-    }
-
-    public function getFormattedJobs(): Collection
-    {
-        $jobs = $this->getJobQuery()->get();
-
-        return $jobs->map(function ($job) {
-            return $this->formatJob($job);
-        });
-    }
-
-    public function createJob(Request $request): int
-    {
-        $companyId = DB::table('companies')
-            ->insertGetId([
-                ...($this->getCompanyData($request)),
-                'created_at' => now(),
-            ]);
-
-        return DB::table('vuejobs')
-            ->insertGetId([
-                ...($this->getJobData($request)),
-                'created_at' => now(),
-                'company_id' => $companyId,
-            ]);
-    }
-
-    public function updateJob(Request $request, int $id): int
-    {
-        $companyId = DB::table('vuejobs')->where('id', $id)->value('company_id');
-
-        DB::table('companies')
-            ->where('id', $companyId)
-            ->update([
-                ...($this->getCompanyData($request)),
-            ]);
-
-        return DB::table('vuejobs')
-            ->where('id', $id)
-            ->update([
-                ...($this->getJobData($request)),
-            ]);
-    }
-
-    public function deleteJob(int $id)
-    {
-        DB::table('vuejobs')->delete($id);
+        $job->delete();
     }
 
 }

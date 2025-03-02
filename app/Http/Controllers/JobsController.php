@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateOrCreateRequest;
+use App\Http\Resources\VuejobResource;
+use App\Models\Vuejob;
 use App\Services\VuejobService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Resources\Json\ResourceCollection;
 
 class JobsController extends Controller
 {
@@ -12,67 +17,34 @@ class JobsController extends Controller
     public function __construct(
         private VuejobService $vuejobService,
     )
-    {}
-
-    /**
-     * Display a listing of the resource.
-     *
-     * @return JsonResponse
-     */
-    public function index(): JsonResponse
     {
-        $data = $this->vuejobService->getFormattedJobs();
-
-        return response()->json($data);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function store(Request $request)
+    public function index(): ResourceCollection
     {
-        $responseId = $this->vuejobService->createJob($request);
-        return response()->json(['id' => $responseId], 201);
+        return $this->vuejobService->getFormattedJobs();
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param int $id
-     * @return JsonResponse
-     */
-    public function show(int $id): JsonResponse
+    public function show(Vuejob $job): VuejobResource
     {
-        $data = $this->vuejobService->getFormattedJob($id);
-
-        return response()->json([...$data]);
+        return $this->vuejobService->getFormattedJob($job);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param Request $request
-     * @param  int  $id
-     * @return JsonResponse
-     */
-    public function update(Request $request, int $id)
+    public function store(UpdateOrCreateRequest $request)
     {
-        $this->vuejobService->updateJob($request, $id);
-        return response()->json(['id' => $id], 201);
+        $createdJobId = $this->vuejobService->createJob($request);
+        return response()->json(['id' => $createdJobId], 201);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return JsonResponse
-     */
-    public function destroy(int $id): JsonResponse
+    public function update(UpdateOrCreateRequest $request, Vuejob $job)
     {
-        $this->vuejobService->deleteJob($id);
+        $jobId = $this->vuejobService->updateJob($request, $job);
+        return response()->json(['id' => $jobId], 201);
+    }
+
+    public function destroy(Vuejob $job): JsonResponse
+    {
+        $this->vuejobService->deleteJob($job);
         return response()->json(['message' => 'Job has been deleted successfully'], 204);
     }
 }
