@@ -19,5 +19,11 @@ class DatabaseSeeder extends Seeder
             CompanySeeder::class,
             VuejobSeeder::class,
         ]);
+
+//        $this->call([
+//            UserSeeder::class,
+//            FakeCompanySeeder::class,
+//            FakeVuejobSeeder::class,
+//        ]);
     }
 }

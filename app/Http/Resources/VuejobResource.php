@@ -20,6 +20,7 @@ class VuejobResource extends JsonResource
             'title' => $this->title,
             'type' => $this->type,
             'description' => $this->description,
+            'salary' => $this->salary,
             'location' => $this->location,
             'company' => new CompanyResource($this->whenLoaded('company')),
         ];
